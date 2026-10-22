@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b5f86">
+  <title>الجواز الصحي الرقمي | مختبر وريد القلب الطبي</title>
+  <style>
+    :root{--blue:#0b5f86;--deep:#123b56;--teal:#18a6a6;--pale:#eef8fb;--gold:#c9a85b;--ink:#243746}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f8fa;color:var(--ink);line-height:1.7}
+    header{background:linear-gradient(125deg,var(--deep),var(--blue));color:white;padding:30px 18px 42px}
+    .wrap{max-width:980px;margin:auto;padding:0 16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:54px;height:54px;border:2px solid #fff8;border-radius:16px;display:grid;place-items:center;font-size:25px;background:#ffffff14}
+    h1{font-size:clamp(23px,4vw,34px);margin:18px 0 5px}
+    header p{margin:0;color:#e3f3f8}
+    main{margin-top:-22px;padding-bottom:38px}
+    .card{background:white;border:1px solid #e2edf1;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 8px 25px #143f5510}
+    h2{font-size:20px;color:var(--deep);margin:0 0 12px}
+    .note{background:#fff8e8;border-right:4px solid var(--gold);padding:12px 14px;border-radius:8px;font-size:14px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    label{display:block;font-weight:bold;font-size:14px;margin-bottom:5px}
+    input,select,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #cbdce3;border-radius:10px;background:#fff;color:var(--ink)}
+    input:focus,select:focus,textarea:focus{outline:2px solid #18a6a655;border-color:var(--teal)}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    button,.btn{border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block}
+    .primary{background:var(--blue);color:white}.secondary{background:#eaf5f8;color:var(--deep)}
+    .status{display:flex;align-items:center;gap:10px;background:var(--pale);padding:14px;border-radius:12px}
+    .status strong{color:var(--blue)}
+    footer{text-align:center;color:#667b87;padding:12px 16px 28px;font-size:13px}
+    .small{font-size:13px;color:#617681}
+    @media(max-width:620px){.grid{grid-template-columns:1fr}.card{padding:17px}.brand{align-items:flex-start}}
+    @media print{body{background:#fff}.actions,header p,.note{display:none}main{margin-top:0}.card{box-shadow:none;break-inside:avoid}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">♥</div>
+      <div><strong>مختبر وريد القلب الطبي</strong><div class="small" style="color:#dceef4">Wareed Al-Qalb Medical Laboratory</div></div>
+    </div>
+    <h1>الجواز الصحي الرقمي</h1>
+    <p>ملف شخصي لتنظيم معلوماتك الصحية ومتابعة الفحوصات.</p>
+  </div>
+</header>
+<main class="wrap">
+  <section class="card">
+    <div class="note"><strong>نسخة تجريبية:</strong> هذه الصفحة نموذج أولي للعرض فقط. لا تُدخل أو تحفظ بيانات صحية حقيقية أو أرقام هوية؛ الصفحة لا تتصل بنظام المختبر ولا توفر تسجيل دخول أو تخزينًا آمنًا.</div>
+  </section>
+  <section class="card">
+    <h2>١. البيانات الأساسية</h2>
+    <div class="grid">
+      <div><label for="name">الاسم (اختياري)</label><input id="name" autocomplete="off" placeholder="اكتب الاسم"></div>
+      <div><label for="birth">سنة الميلاد (اختياري)</label><input id="birth" inputmode="numeric" placeholder="مثال: 1990" maxlength="4"></div>
+      <div><label for="blood">فصيلة الدم</label><select id="blood"><option value="">اختر عند المعرفة</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option><option>غير معروفة</option></select></div>
+      <div><label for="updated">تاريخ تحديث المعلومات</label><input id="updated" type="date"></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>٢. ملخص الفحوصات</h2>
+    <p class="small">استخدم هذا القسم كقائمة تذكير عامة فقط، ولا تضف نتائج أو معلومات تعريفية حساسة إلى هذه النسخة التجريبية.</p>
+    <div class="grid">
+      <div><label for="test">اسم الفحص أو المتابعة</label><input id="test" placeholder="مثال: فحص دوري"></div>
+      <div><label for="date">تاريخ الفحص</label><input id="date" type="date"></div>
+      <div><label for="follow">موعد المتابعة المقترح</label><input id="follow" type="date"></div>
+      <div><label for="general">ملاحظات عامة غير حساسة</label><input id="general" placeholder="مثال: تذكير بإعادة الفحص"></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>٣. تذكيرات صحية</h2>
+    <div class="status"><span aria-hidden="true">✓</span><div><strong>تابع فحوصاتك بانتظام</strong><div>ناقش نتائج التحاليل مع مختص صحي، ولا تعتمد على هذه الصفحة للتشخيص أو العلاج.</div></div></div>
+    <div class="actions">
+      <button class="primary" type="button" onclick="window.print()">طباعة / حفظ كـ PDF</button>
+      <button class="secondary" type="button" onclick="resetForm()">مسح الحقول</button>
+    </div>
+  </section>
+  <section class="card">
+    <h2>التواصل مع المختبر</h2>
+    <p><strong>مختبر وريد القلب الطبي</strong></p>
+    <p>الطائف – طريق المطار – مقابل كلية السياحة</p>
+    <p>الهاتف وواتساب: <a href="https://wa.me/966556005225" target="_blank" rel="noopener">0556005225</a></p>
+    <p>الموقع على خرائط Google: <a href="https://maps.app.goo.gl/6F7vThpo55naTrNY9" target="_blank" rel="noopener">عرض الموقع</a></p>
+  </section>
+</main>
+<footer>© مختبر وريد القلب الطبي — نموذج أولي للجواز الصحي الرقمي</footer>
+<script>
+  function resetForm(){
+    if(confirm('هل تريد مسح جميع الحقول؟')){
+      document.querySelectorAll('input,select').forEach(el=>el.value='');
+    }
+  }
+  document.getElementById('updated').value = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
