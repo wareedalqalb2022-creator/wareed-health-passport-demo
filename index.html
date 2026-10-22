@@ -60,6 +60,22 @@ footer{text-align:center;color:#6a808b;font-size:12px;padding:5px 16px 28px}
 </div></header>
 <main class="wrap">
 <section class="card"><div class="note"><strong>تنبيه مهم:</strong> هذه نسخة تجريبية للعرض والتنظيم فقط. لا تُدخل نتائج تحاليل حقيقية أو أرقام هوية أو معلومات صحية حساسة؛ الصفحة لا توفر تسجيل دخول أو تخزينًا آمنًا ولا تتصل بنظام المختبر.</div></section>
+
+<section class="card" id="auth-card">
+<h2><span class="num">★</span> تسجيل الدخول إلى الجواز الصحي</h2>
+<p class="help">أنشئي حسابًا تجريبيًا أو سجّلي الدخول. إنشاء الحساب لا يمنح الوصول إلى نتائج المختبر تلقائيًا؛ يلزم ربط الحساب بسجل المريض والتحقق منه من قبل المختبر.</p>
+<div class="grid">
+<div><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+<div><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="8 أحرف على الأقل" required></div>
+</div>
+<div class="actions">
+<button class="primary" id="sign-up" type="button">إنشاء حساب</button>
+<button class="secondary" id="sign-in" type="button">تسجيل الدخول</button>
+<button class="secondary" id="sign-out" type="button" hidden>تسجيل الخروج</button>
+</div>
+<div id="auth-message" class="status" role="status" aria-live="polite" style="margin-top:14px"><div class="check">i</div><div>هذه نسخة تجريبية. لا تستخدمي بيانات صحية حقيقية.</div></div>
+<div id="account-status" class="note" hidden style="margin-top:12px"></div>
+</section>
 <section class="card">
 <h2><span class="num">١</span> البيانات الأساسية</h2>
 <div class="grid">
@@ -99,5 +115,125 @@ footer{text-align:center;color:#6a808b;font-size:12px;padding:5px 16px 28px}
 function resetForm(){if(confirm('هل تريد مسح جميع الحقول؟')){document.querySelectorAll('input,select').forEach(el=>el.value='');}}
 document.getElementById('updated').value=new Date().toISOString().slice(0,10);
 </script>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
+
+const SUPABASE_URL = 'https://lakfzsviespywnarojvi.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0JgEstrDM26FyhkhiLlyDQ_jfJPCbav';
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const emailInput = document.getElementById('auth-email');
+const passwordInput = document.getElementById('auth-password');
+const message = document.getElementById('auth-message');
+const accountStatus = document.getElementById('account-status');
+const signUpButton = document.getElementById('sign-up');
+const signInButton = document.getElementById('sign-in');
+const signOutButton = document.getElementById('sign-out');
+
+function showMessage(text, kind = 'info') {
+  message.replaceChildren();
+  const mark = document.createElement('div');
+  mark.className = 'check';
+  mark.textContent = kind === 'error' ? '!' : '✓';
+  const body = document.createElement('div');
+  body.textContent = text;
+  message.append(mark, body);
+}
+function busy(isBusy) {
+  [signUpButton, signInButton, signOutButton].forEach(button => button.disabled = isBusy);
+}
+function validInputs() {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !emailInput.checkValidity()) {
+    showMessage('أدخلي بريدًا إلكترونيًا صحيحًا.', 'error'); return false;
+  }
+  if (password.length < 8) {
+    showMessage('كلمة المرور يجب أن تتكون من 8 أحرف على الأقل.', 'error'); return false;
+  }
+  return true;
+}
+async function refreshSession(session) {
+  const user = session?.user;
+  signUpButton.hidden = !!user;
+  signInButton.hidden = !!user;
+  signOutButton.hidden = !user;
+  accountStatus.hidden = !user;
+  if (!user) {
+    accountStatus.textContent = '';
+    showMessage('يمكنك إنشاء حساب أو تسجيل الدخول. لا تُدخلي أي معلومات صحية حقيقية في هذه النسخة.', 'info');
+    return;
+  }
+  accountStatus.textContent = 'حسابك مسجل الدخول، لكن لا توجد صلاحية لعرض النتائج حتى يتحقق المختبر من هويتك ويربط الحساب بسجلك. لن تُعرض نتائج التحاليل في هذه الصفحة التجريبية.';
+  showMessage('تم تسجيل الدخول بنجاح. الوصول إلى سجل المريض غير مفعّل تلقائيًا.', 'info');
+  // Read only this user's own account row. Never accept a user ID from a form or URL.
+  const { data, error } = await supabase
+    .from('patient_accounts')
+    .select('verification_status')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) {
+    accountStatus.textContent = 'تم تسجيل الدخول، لكن تعذّر التحقق من حالة الربط الآن. لا تظهر نتائج طبية في هذه النسخة.';
+    return;
+  }
+  if (data?.verification_status === 'verified') {
+    accountStatus.textContent = 'الحساب مرتبط ومتحقق منه في قاعدة البيانات التجريبية. عرض النتائج الطبية لم يُفعّل بعد.';
+  } else if (data?.verification_status === 'rejected') {
+    accountStatus.textContent = 'لم تتم الموافقة على ربط الحساب. تواصلي مع المختبر للتحقق من البيانات.';
+  } else {
+    accountStatus.textContent = 'حسابك بانتظار ربطه بسجل المريض والتحقق منه من قبل المختبر. إنشاء الحساب وحده لا يتيح الوصول إلى النتائج.';
+  }
+}
+signUpButton.addEventListener('click', async () => {
+  if (!validInputs()) return;
+  busy(true);
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: emailInput.value.trim(),
+      password: passwordInput.value,
+      options: { emailRedirectTo: window.location.origin + window.location.pathname }
+    });
+    if (error) throw error;
+    if (data.session) {
+      showMessage('تم إنشاء الحساب. لا يمكن عرض نتائج حتى يتم التحقق من الهوية وربط الحساب بسجل المريض.', 'info');
+      await refreshSession(data.session);
+    } else {
+      showMessage('تم إرسال طلب إنشاء الحساب. افتحي رسالة التأكيد في بريدك الإلكتروني ثم عودي إلى الموقع لتسجيل الدخول. إذا لم تصلك الرسالة، فقد تحتاج خدمة البريد إلى الإعداد في Supabase.', 'info');
+    }
+  } catch (error) {
+    showMessage(error?.message || 'تعذّر إنشاء الحساب. حاولي مرة أخرى.', 'error');
+  } finally { busy(false); }
+});
+signInButton.addEventListener('click', async () => {
+  if (!validInputs()) return;
+  busy(true);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailInput.value.trim(), password: passwordInput.value
+    });
+    if (error) throw error;
+    await refreshSession(data.session);
+  } catch (error) {
+    showMessage(error?.message || 'تعذّر تسجيل الدخول. تحققي من البريد وكلمة المرور.', 'error');
+  } finally { busy(false); }
+});
+signOutButton.addEventListener('click', async () => {
+  busy(true);
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    await refreshSession(null);
+  } catch (error) {
+    showMessage(error?.message || 'تعذّر تسجيل الخروج.', 'error');
+  } finally { busy(false); }
+});
+supabase.auth.onAuthStateChange((_event, session) => {
+  // Defer the profile query so it does not run inside the auth callback lock.
+  setTimeout(() => refreshSession(session), 0);
+});
+const { data: initial } = await supabase.auth.getSession();
+await refreshSession(initial.session);
+</script>
+
 </body>
 </html>
