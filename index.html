@@ -76,6 +76,18 @@ footer{text-align:center;color:#6a808b;font-size:12px;padding:5px 16px 28px}
 <div id="auth-message" class="status" role="status" aria-live="polite" style="margin-top:14px"><div class="check">i</div><div>هذه نسخة تجريبية. لا تستخدمي بيانات صحية حقيقية.</div></div>
 <div id="account-status" class="note" hidden style="margin-top:12px"></div>
 </section>
+<section class="card" id="admin-panel" hidden>
+<h2><span class="num">⚙</span> لوحة إدارة المختبر</h2>
+<p class="help">للمسؤول المعتمد فقط. تحققي من هوية المريض ومطابقة بياناته مع سجل المختبر قبل ربط الحساب أو اعتماد الوصول. استخدمي بيانات وهمية في هذه النسخة التجريبية.</p>
+<div class="grid">
+<div><label for="admin-patient-email">بريد حساب المريض المؤكد</label><input id="admin-patient-email" type="email" placeholder="patient@example.com"></div>
+<div><label for="admin-patient-code">رمز/رقم ملف المريض</label><input id="admin-patient-code" placeholder="أدخلي الرمز بعد التحقق"></div>
+<div><label for="admin-patient-name">اسم العرض (اختياري)</label><input id="admin-patient-name" placeholder="اسم مختصر"></div>
+</div>
+<div class="actions"><button class="primary" id="admin-link-button" type="button">ربط الحساب بطلب تحقق</button><button class="secondary" id="admin-refresh-button" type="button">تحديث الطلبات</button></div>
+<div id="admin-message" class="status" role="status" aria-live="polite" style="margin-top:12px"><div class="check">i</div><div>تظهر هنا طلبات الربط المسجلة في قاعدة البيانات.</div></div>
+<div id="admin-requests" style="margin-top:14px"></div>
+</section>
 <section class="card">
 <h2><span class="num">١</span> البيانات الأساسية</h2>
 <div class="grid">
@@ -153,8 +165,86 @@ function validInputs() {
   }
   return true;
 }
+
+const adminPanel = document.getElementById('admin-panel');
+const adminMessage = document.getElementById('admin-message');
+const adminRequests = document.getElementById('admin-requests');
+const adminLinkButton = document.getElementById('admin-link-button');
+const adminRefreshButton = document.getElementById('admin-refresh-button');
+function showAdminMessage(text, isError = false) {
+  adminMessage.replaceChildren();
+  const mark = document.createElement('div'); mark.className = 'check'; mark.textContent = isError ? '!' : '✓';
+  const body = document.createElement('div'); body.textContent = text;
+  adminMessage.append(mark, body);
+}
+async function loadAdminRequests() {
+  adminRequests.replaceChildren();
+  const { data, error } = await supabase.from('patient_accounts')
+    .select('user_id, patient_code, display_name, verification_status, created_at')
+    .order('created_at', { ascending: false });
+  if (error) { showAdminMessage('تعذر تحميل الطلبات: ' + error.message, true); return; }
+  if (!data?.length) {
+    const p = document.createElement('p'); p.className = 'help'; p.textContent = 'لا توجد طلبات ربط حتى الآن.';
+    adminRequests.append(p); return;
+  }
+  data.forEach(row => {
+    const item = document.createElement('div');
+    item.className = 'status'; item.style.marginBottom = '10px';
+    const body = document.createElement('div'); body.style.width = '100%';
+    const title = document.createElement('strong');
+    title.textContent = (row.display_name || 'مريض') + ' — ' + (row.patient_code || 'بدون رمز ملف');
+    const details = document.createElement('div');
+    details.textContent = 'حالة التحقق: ' + row.verification_status + ' | معرّف الحساب: ' + row.user_id;
+    details.style.overflowWrap = 'anywhere';
+    body.append(title, details);
+    const actions = document.createElement('div'); actions.className = 'actions';
+    if (row.verification_status !== 'verified') {
+      const approve = document.createElement('button'); approve.className = 'primary'; approve.type = 'button'; approve.textContent = 'اعتماد بعد التحقق';
+      approve.addEventListener('click', () => updateVerification(row.user_id, 'verified'));
+      actions.append(approve);
+    }
+    if (row.verification_status !== 'rejected') {
+      const reject = document.createElement('button'); reject.className = 'secondary'; reject.type = 'button'; reject.textContent = 'رفض الطلب';
+      reject.addEventListener('click', () => updateVerification(row.user_id, 'rejected'));
+      actions.append(reject);
+    }
+    body.append(actions); item.append(body); adminRequests.append(item);
+  });
+}
+async function updateVerification(userId, status) {
+  const confirmation = status === 'verified'
+    ? 'هل تحققتِ من هوية المريض وطابقتِ بياناته مع سجل المختبر؟'
+    : 'هل تريدين رفض طلب الربط؟';
+  if (!confirm(confirmation)) return;
+  const { error } = await supabase.from('patient_accounts')
+    .update({ verification_status: status }).eq('user_id', userId);
+  if (error) { showAdminMessage('تعذر تحديث الحالة: ' + error.message, true); return; }
+  showAdminMessage(status === 'verified' ? 'تم اعتماد التحقق.' : 'تم رفض طلب الربط.');
+  await loadAdminRequests();
+}
+adminLinkButton.addEventListener('click', async () => {
+  const email = document.getElementById('admin-patient-email').value.trim();
+  const code = document.getElementById('admin-patient-code').value.trim();
+  const name = document.getElementById('admin-patient-name').value.trim();
+  if (!email || !code) { showAdminMessage('أدخلي بريد المريض ورمز ملفه بعد التحقق من هويته.', true); return; }
+  adminLinkButton.disabled = true;
+  try {
+    const { error } = await supabase.rpc('admin_link_patient_account', {
+      p_email: email, p_patient_code: code, p_display_name: name || null
+    });
+    if (error) throw error;
+    showAdminMessage('تم تسجيل طلب الربط بحالة «بانتظار التحقق». راجعي الطلب ثم اعتمديه بعد مطابقة الهوية وسجل المختبر.');
+    await loadAdminRequests();
+  } catch (error) { showAdminMessage(error?.message || 'تعذر ربط الحساب.', true); }
+  finally { adminLinkButton.disabled = false; }
+});
+adminRefreshButton.addEventListener('click', loadAdminRequests);
+
 async function refreshSession(session) {
   const user = session?.user;
+  const isLabAdmin = user?.app_metadata?.role === 'lab_admin';
+  adminPanel.hidden = !isLabAdmin;
+  if (isLabAdmin) { loadAdminRequests(); }
   signUpButton.hidden = !!user;
   signInButton.hidden = !!user;
   signOutButton.hidden = !user;
